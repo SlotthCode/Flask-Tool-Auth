@@ -1,5 +1,13 @@
 from flask import Flask, jsonify, request
 import time, requests, json
+from dataclasses import dataclass
+
+@dataclass
+class User:
+  username: str
+  password: str
+  hwid: str
+
 
 
 
@@ -15,33 +23,42 @@ def uptime():
 @app.route("/api/auth", methods=['POST'])
 def auth():
     datas = request.get_json()
+    rip = {
+      "status":"success", 
+      "username": target_user.username, 
+      "password": target_user.password, 
+      "hwid": target_user.hwid
+    }
+    target_user = User(**datas)
     f = open ('auth.json', "r")
     data = json.loads(f.read())
+
+    users = [User(**data) for user in data["users"]]
   
-    for i in data["users"]:
-      if datas["username"] == i["username"]:
-        if datas["password"] == i["password"]:
-          if datas["hwid"]== i["hwid"]:
-            print(f'{datas["username"]} has Login!')
-            lol = jsonify({"status": "success", "message": "Login Success"})
+    for user in users:
+      equ = {
+        "username": user.username == target_user.username,
+        "password": user.password == target_user.password, 
+        "hwid": user.hwid == target_user.hwid    
+      }
+      if equ["username"] and equ["password"] and equ["hwid"]:
+        print(f'{target_user.username} has Login!')
+        lol = jsonify({"status": "success", "message": "Login Success"})
             
-            f= open ('config.json', "r")
-            data = json.loads(f.read())
-            rip = {"status":"success", "username": datas["username"], "password":datas["password"], "hwid":datas["hwid"]}
-            jsons = {
-              "content": f"{rip}"
-            }
-            
-            r = requests.post(data["discordwebhook"], json=jsons)
-            return lol
-          else:
-            pass
+        f= open ('config.json', "r")
+        data = json.loads(f.read()) 
+        jsons = {
+           "content": f"{rip}"
+        }
+         
+        r = requests.post(data["discordwebhook"], json=jsons)
+        return jsonify(lol)
             
     lol = jsonify({"status": "fail", "message": "Login Fail"})
     print(datas)
     f = open ('config.json', "r")
     data = json.loads(f.read())
-    rip = {"status":"failed", "username": datas["username"], "password":datas["password"], "hwid":datas["hwid"]}
+    rip["status"] = "failed"
     jsons = {
       "content": f"{rip}"
     }
